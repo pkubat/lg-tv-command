@@ -1,4 +1,31 @@
-// vim lg-tv-command.c && gcc -std=gnu99 -Wall lg.c -o lg-tv-command && ./lg-tv-command
+/*
+LG TV serial port command tool
+
+Copyright (c) 2011, Rafael Vuijk
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * Neither the name of the <organization> nor the
+      names of its contributors may be used to endorse or promote products
+      derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -159,6 +186,18 @@ typedef struct
 	_(WhiteWash,		4)\
 	_(Normal,			8)\
 
+#define ENERGY_SAVING_TYPE(_)			NIT(_,NAME_INDEX)
+#define ENERGY_SAVING_LIST(_)\
+	_(Off,				0x00)\
+	_(Minimum,			0x01)\
+	_(Medium,			0x02)\
+	_(Maximum,			0x03)\
+	_(Auto,				0x04)\
+	_(ScreenOff,		0x05)\
+	_(IS_Low,			0x10)\
+	_(IS_Middle,		0x11)\
+	_(IS_High,			0x12)\
+
 #define COLOR_TEMPERATURE_TYPE(_)		NIT(_,NAME_INDEX)
 #define COLOR_TEMPERATURE_LIST(_)\
 	_(Medium,			0)\
@@ -240,6 +279,7 @@ typedef struct
 	_(INPUT_SELECT2)\
 	_(ASPECT_RATIO)\
 	_(ISM_METHOD)\
+	_(ENERGY_SAVING)\
 	_(COLOR_TEMPERATURE)\
 	_(REMOTE)\
 
@@ -267,7 +307,7 @@ DEF_LIST(LISTS)
 	_(Balance,			'k','t',0,100,)\
 	_(ColorTemperature,	'k','u',0,0,COLOR_TEMPERATURE)\
 	_(ISMMethod,		'j','p',0,0,ISM_METHOD)\
-	_(EnergySaving,		'j','q',0,4,)\
+	_(EnergySaving,		'j','q',0,0,ENERGY_SAVING)\
 	_(AutoConfiguration,'j','u',1,1,)\
 	_(ChannelTuning,	'm','a',0,0,)/*TODO: extra data bytes*/\
 	_(ChannelAddDel,	'm','b',0,1,)\
