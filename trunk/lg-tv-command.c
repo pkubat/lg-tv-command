@@ -72,6 +72,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	enum { LIST(list)(LIST_ENUM(list)) LENGTH2(list) };	\
 	LIST_STYPE(list) LIST(list)[] = { LIST(list)(LIST_STRUCT(list)) };
 
+// allow 'recursion'
 #define DEF_SUBLIST(list)		\
 	LIST(list)(LIST_CODE(list))	\
 	enum { LIST(list)(LIST_ENUM(list)) LENGTH2(list) };	\
@@ -88,19 +89,17 @@ typedef struct
 } SubDef;
 
 #define NAME_INDEX_CODE(m,i,...)
-#define NAME_INDEX_ENUM(m,i,...)		//m = i,
+#define NAME_INDEX_ENUM(m,i,...)
 #define NAME_INDEX_STRUCT(m,i,...)		{ i, #m },
 #define NAME_INDEX_STYPE				SubDef
 
 typedef struct
 {
-	//const char *name;
-	//SubDef *list;
 } Main2Def;
 
 #define LISTNAME_CODE(l)				DEF_SUBLIST(l)
 #define LISTNAME_ENUM(l)				l##_INDEX,
-#define LISTNAME_STRUCT(l)				//{ #l, LIST(l) },
+#define LISTNAME_STRUCT(l)
 #define LISTNAME_STYPE					Main2Def
 
 typedef struct
@@ -124,7 +123,7 @@ typedef struct
 /*
  * the lists
  */
-
+/*
 #define INPUT_SELECT1_TYPE(_)		NIT(_,NAME_INDEX)
 #define INPUT_SELECT1_LIST(_)\
 	_(DTV,				0x00)\
@@ -136,20 +135,22 @@ typedef struct
 	_(RGB,				0x07)\
 	_(HDMI1,			0x08)\
 	_(HDMI2,			0x09)\
+*/
+// add suffix and add value
+#define M_(_,m,i)		\
+	_(m##1,i+0)\
+	_(m##2,i+1)\
+	_(m##3,i+2)\
+	_(m##4,i+3)\
 
 #define INPUT_SELECT2_TYPE(_)		NIT(_,NAME_INDEX)
 #define INPUT_SELECT2_LIST(_)\
-	_(DTVAntenna,		0x00)\
-	_(DTVCable,			0x01)\
-	_(AnalogAntenna,	0x10)\
-	_(AnalogCable,		0x11)\
-	_(AV1,				0x20)\
-	_(AV2,				0x21)\
-	_(Component1,		0x40)\
-	_(Component2,		0x41)\
-	_(RGB,				0x60)\
-	_(HDMI1,			0x90)\
-	_(HDMI2,			0x91)\
+	M_(_, DTV,				0x00)\
+	M_(_, Analog,			0x10)\
+	M_(_, AV,				0x20)\
+	M_(_, Component,		0x40)\
+	M_(_, RGB,				0x60)\
+	M_(_, HDMI,				0x90)\
 
 #define ASPECT_RATIO_TYPE(_)		NIT(_,NAME_INDEX)
 #define ASPECT_RATIO_LIST(_)\
@@ -275,7 +276,7 @@ typedef struct
 
 #define LISTS_TYPE(_)			NIT(_,LISTNAME)
 #define LISTS_LIST(_)\
-	_(INPUT_SELECT1)\
+	/*_(INPUT_SELECT1)*/\
 	_(INPUT_SELECT2)\
 	_(ASPECT_RATIO)\
 	_(ISM_METHOD)\
@@ -313,13 +314,13 @@ DEF_LIST(LISTS)
 	_(ChannelAddDel,	'm','b',0,1,)\
 	_(Key,				'm','c',0,0,REMOTE)\
 	_(ControlBackLight,	'm','g',0,100,)\
-	_(InputSelect2,		'x','b',0,0,INPUT_SELECT2)\
+	_(InputSelect,		'x','b',0,0,INPUT_SELECT2)\
 
 DEF_LIST(CMD)
 
 
 /*
- *
+ * Global
  */
 
 #define TIMEOUT		1.0
@@ -565,7 +566,7 @@ int main(int argc, char *argv[])
 					strfix(c);
 					if (strstr(c, argv_value2) != NULL)
 					{
-						printf("%s\n", list[s].name);
+						//printf("%s\n", list[s].name);
 						value = list[s].value;
 						break;
 					}
@@ -575,7 +576,9 @@ int main(int argc, char *argv[])
 			}
 			if (value < 0)		// no enum or it did not match
 			{
-				value = strtoul(argv_value,0,0);
+				char *endp = argv_value;
+				value = strtoul(argv_value, &endp, 0);
+				if (endp == argv_value) value = -1;		// did not parse
 			}
 
 			break;
