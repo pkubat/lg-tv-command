@@ -386,6 +386,7 @@ void InitSerial()
 
 	tcflush(fd, TCIOFLUSH);
 	write(fd, "\r", 1);		// reset, wake up, whatever
+	//tcdrain(fd);
 }
 
 /*
@@ -469,13 +470,16 @@ int SendCommand(char cmd1, char cmd2, unsigned char value)
 /*
  * Make string lowercase etc.
  */
-void strfix(char *x)
+void strfix(char *str)
 {
+	char *x = str;
 	for (; *x; x++)
 	{
 		if (*x >= 'A' && *x <= 'Z') *x += 'a' - 'A';
 		if (*x <= ' ') *x = '_';
 	}
+	x = strstr(str, "colour");
+	if (x != NULL) { strcpy(x, "color"); strcat(x, x + 6); }
 }
 
 /*
@@ -488,7 +492,7 @@ int main(int argc, char *argv[])
 	char *argv_cmd = (argc >= 2) ? argv[1] : NULL;
 	char *argv_value = (argc >= 3) ? argv[2] : NULL;
 	
-	char cmd1, cmd2;
+	char cmd1 = -1, cmd2 = -1;
 	int value = -1;
 
 	/*
@@ -504,88 +508,103 @@ int main(int argc, char *argv[])
 		}
 		return 1;
 	}
-	
-	char *argv_cmd2 = strdup(argv_cmd);
-	strfix(argv_cmd2);
 
-	LIST_STYPE(CMD) *commands = LIST(CMD);
-	for (int l=0; l<LENGTH(CMD); l++)
+	/*
+	 * Determine command by matching enum
+	 */
+	LIST_STYPE(CMD) *command = NULL;
+	if (strlen(argv_cmd) >= 3)
 	{
-		char *name2 = strdup(commands[l].name);
-		strfix(name2);
-		if (strstr(name2, argv_cmd2) != NULL)
+		char *argv_cmd2 = strdup(argv_cmd);
+		strfix(argv_cmd2);
+		LIST_STYPE(CMD) *commands = LIST(CMD);
+		for (int l=0; l<LENGTH(CMD); l++)
 		{
-			cmd1 = commands[l].cmd1;
-			cmd2 = commands[l].cmd2;
-
-			/*
-			 * Show current value and possible values
-			 */
-			if (argv_value == NULL)
+			char *name2 = strdup(commands[l].name);
+			strfix(name2);
+			if (strstr(name2, argv_cmd2) != NULL)
 			{
-				if (argv_value == NULL) printf("%s:\n\n", commands[l].name);
-				int r = SendCommand(cmd1, cmd2, READ_STATUS);
-				if (r >= 0)
-				{
-					printf("Current value: %u (0x%02X).", r, r);
-					if ((commands[l].min != 0) || (commands[l].max != 0))
-						printf(" Range: %u-%u.", commands[l].min, commands[l].max);
-					printf("\n\n");
-				}
-				else
-				{
-					printf("Response error %d.\n\n", r);
-				}
-				
-				SubDef *list = commands[l].list;
-				if (list != NULL)
-				{
-					for (int s=0; s<commands[l].listlen; s++)
-					{
-						if (r == list[s].value)
-							printf("=>");
-						else
-							printf("  ");
-						printf("%s\n", list[s].name);
-					}
-				}
-				return 0;
+				cmd1 = commands[l].cmd1;
+				cmd2 = commands[l].cmd2;
+				command = &commands[l];
+				break;
 			}
-
-			/*
-			 * Determine value by matching enum
-			 */
-			SubDef *list = commands[l].list;
-			if (list != NULL)
-			{
-				char *argv_value2 = strdup(argv_value);
-				strfix(argv_value2);
-				for (int s=0; s<commands[l].listlen; s++)
-				{
-					char *c = strdup(list[s].name);
-					strfix(c);
-					if (strstr(c, argv_value2) != NULL)
-					{
-						//printf("%s\n", list[s].name);
-						value = list[s].value;
-						break;
-					}
-					free(c);
-				}
-				free(argv_value2);
-			}
-			if (value < 0)		// no enum or it did not match
-			{
-				char *endp = argv_value;
-				value = strtoul(argv_value, &endp, 0);
-				if (endp == argv_value) value = -1;		// did not parse
-			}
-
-			break;
+			free(name2);
 		}
-		free(name2);
+	}
+	if ((strlen(argv_cmd) == 2) && (command == NULL))
+	{
+		cmd1 = argv_cmd[0];
+		cmd2 = argv_cmd[1];
+	}
+	if ((cmd1 <= 0) || (cmd2 <= 0))
+	{
+		printf("Invalid command.\n");
+		return 1;
+	}
+	
+	SubDef *list = (command != NULL) ? command->list : NULL;
+
+	/*
+	 * Show current value and possible values
+	 */
+	if (argv_value == NULL)
+	{
+		if (argv_value == NULL) if (command != NULL) printf("%s:\n\n", command->name);
+		int r = SendCommand(cmd1, cmd2, READ_STATUS);
+		if (r >= 0)
+		{
+			printf("Current value: %u (0x%02X).", r, r);
+			if (command != NULL) if ((command->min != 0) || (command->max != 0))
+				printf(" Range: %u-%u.", command->min, command->max);
+			printf("\n\n");
+		}
+		else
+		{
+			printf("Response error %d.\n\n", r);
+		}
+		
+		if (list != NULL)
+		{
+			for (int s=0; s<command->listlen; s++)
+			{
+				if (r == list[s].value)
+					printf("=>");
+				else
+					printf("  ");
+				printf("%s\n", list[s].name);
+			}
+		}
+		return 0;
 	}
 
+	/*
+	 * Determine value by matching enum
+	 */
+	if (list != NULL)
+	{
+		char *argv_value2 = strdup(argv_value);
+		strfix(argv_value2);
+		for (int s=0; s<command->listlen; s++)
+		{
+			char *c = strdup(list[s].name);
+			strfix(c);
+			if (strstr(c, argv_value2) != NULL)
+			{
+				//printf("%s\n", list[s].name);
+				value = list[s].value;
+				break;
+			}
+			free(c);
+		}
+		free(argv_value2);
+	}
+	if (value < 0)		// no enum or it did not match
+	{
+		char *endp = argv_value;
+		value = strtoul(argv_value, &endp, 0);
+		if (endp == argv_value) value = -1;		// did not parse
+	}
 	if (value < 0)
 	{
 		printf("Invalid value.\n");
