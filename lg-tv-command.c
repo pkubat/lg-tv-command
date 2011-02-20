@@ -154,14 +154,14 @@ typedef struct
 
 #define ASPECT_RATIO_TYPE(_)		NIT(_,NAME_INDEX)
 #define ASPECT_RATIO_LIST(_)\
-	_(_4_3,				1)\
-	_(_16_9,			2)\
-	_(Horizon,			3)\
-	_(Zoom1,			4)\
-	_(Zoom2,			5)\
-	_(Original,			6)\
-	_(_14_9,			7)\
-	_(JustScan,			9)\
+	_(_4_3,				0x01)\
+	_(_16_9,			0x02)\
+	_(Horizon,			0x03)\
+	_(Zoom1,			0x04)\
+	_(Zoom2,			0x05)\
+	_(Original,			0x06)\
+	_(_14_9,			0x07)\
+	_(JustScan,			0x09)	/*pixel-perfect*/\
 	_(FullWide,			0x0B)\
 	_(CinemaZoom1,		0x10)\
 	_(CinemaZoom2,		0x11)\
@@ -216,13 +216,13 @@ typedef struct
 	_(TEXT,			0x20)\
 	_(T_OPTION,		0x21)\
 	_(FREEZE,		0x65)\
-	_(AV_MODE,		0x30)\
+	_(AV_MODE,		0x30)	/*show/cycle picture modes: Cinema/Sport/Game/Off(=vivid/natural/expert)*/\
 	_(INFO,			0xAA)\
-	_(ENERGY,		0x95)\
+	_(ENERGY,		0x95)	/*show/cycle energy saving mode*/\
 	_(TV,			0x0F)\
-	_(INPUT,		0x0B)\
+	_(INPUT,		0x0B)	/*show/cycle input selection*/\
 	_(POWER,		0x08)\
-	_(RATIO,		0x79)\
+	_(RATIO,		0x79)	/*show/cycle aspect ratio mode*/\
 	_(TIMER,		0x0E)\
 	_(_0,			0x10)\
 	_(_1,			0x11)\
@@ -253,11 +253,11 @@ typedef struct
 	_(MENU,			0x43)\
 	_(GUIDE,		0xAB)\
 	_(SOUND,		0x52)\
-	_(PICTURE,		0x4D)\
+	_(PICTURE,		0x4D)	/*show/cycle picture mode*/\
 	_(RETURN_EXIT,	0x28)\
 	_(EXIT,			0x5B)\
 	_(SAP,			0x0A)\
-	_(ADJUST,		0xCB)\
+	_(ADJUST,		0xCB)	/*show position adjustment menu*/\
 	_(BRIGHT_DOWN,	0xE1)\
 	_(BRIGHT_UP,	0xE0)\
 	_(TV,			0xD6)\
