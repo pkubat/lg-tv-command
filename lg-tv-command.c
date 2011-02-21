@@ -41,8 +41,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/time.h>
 #include <stdbool.h>
 
-#define DEVICE			"/dev/tty.usbserial"
-
 #define READ_STATUS		0xFF
 
 /*
@@ -324,7 +322,6 @@ DEF_LIST(CMD)
  */
 
 #define TIMEOUT		1.0
-const int set_id = 1;
 
 int fd = -1;		// filedescriptor for serial port
 
@@ -367,7 +364,8 @@ void InitSerial()
 {
 	if (fd != -1) return;	// already opened
 	
-	char *device = DEVICE;
+	char *device = getenv("LG_DEVICE");
+	if (device == NULL) { fprintf(stderr, "You must set LG_DEVICE to the serial port connection device.\n"); exit(1); }
     fd = open(device, O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if (fd < 0) { fprintf(stderr, "Cannot open '%s'\n", device); exit(1); }
     tcflush(fd, TCIOFLUSH);
@@ -407,6 +405,9 @@ int SendCommand(char cmd1, char cmd2, unsigned char value)
 {
 	InitSerial();
 	
+	char *set_id_str = getenv("LG_ID");
+	if (set_id_str == NULL) { fprintf(stderr, "You must set LG_ID to the TV id. Normally it is 1.\n"); exit(1); }
+	const int set_id = strtoul(set_id_str,0,0);
 	char cmd[20];
 	int len = sprintf(cmd, "%c%c %02x %02x\r", cmd1, cmd2, set_id, (int)value);
 	//printf("%s\n", cmd);
