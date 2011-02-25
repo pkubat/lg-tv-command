@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <stdbool.h>
+#include <limits.h>
 
 #define READ_STATUS		0xFF
 
@@ -206,22 +207,18 @@ typedef struct
 
 #define REMOTE_TYPE(_)				NIT(_,NAME_INDEX)
 #define REMOTE_LIST(_)\
-	_(TV_RADIO,		0xF0)\
-	_(RED_KEY,		0x72)\
-	_(GREEN_KEY,	0x71)\
-	_(YELLOW_KEY,	0x63)\
-	_(BLUE_KEY,		0x61)\
-	_(TEXT,			0x20)\
-	_(T_OPTION,		0x21)\
-	_(FREEZE,		0x65)\
-	_(AV_MODE,		0x30)	/*show/cycle picture modes: Cinema/Sport/Game/Off(=vivid/natural/expert)*/\
-	_(INFO,			0xAA)\
-	_(ENERGY,		0x95)	/*show/cycle energy saving mode*/\
-	_(TV,			0x0F)\
-	_(INPUT,		0x0B)	/*show/cycle input selection*/\
+	_(CHAN_UP,		0x00)\
+	_(CHAN_DOWN,	0x01)\
+	_(VOL_UP,		0x02)\
+	_(VOL_DOWN,		0x03)\
+	_(RIGHT,		0x06)\
+	_(LEFT,			0x07)\
 	_(POWER,		0x08)\
-	_(RATIO,		0x79)	/*show/cycle aspect ratio mode*/\
+	_(MUTE,			0x09)\
+	_(SAP,			0x0A)\
+	_(INPUT,		0x0B)	/*show/cycle input selection*/\
 	_(TIMER,		0x0E)\
+	_(TV,			0x0F)\
 	_(_0,			0x10)\
 	_(_1,			0x11)\
 	_(_2,			0x12)\
@@ -232,45 +229,72 @@ typedef struct
 	_(_7,			0x17)\
 	_(_8,			0x18)\
 	_(_9,			0x19)\
-	_(DASH,			0x4C)\
 	_(BACK,			0x1A)\
 	_(Q_VIEW,		0x1A)\
-	_(MUTE,			0x09)\
-	_(VOL_UP,		0x02)\
-	_(VOL_DOWN,		0x03)\
-	_(CHAN_UP,		0x00)\
-	_(CHAN_DOWN,	0x01)\
 	_(FAV,			0x1E)\
-	_(SIMPLINK,		0x7E)\
+	_(TEXT,			0x20)\
+	_(T_OPTION,		0x21)\
+	_(TEXT_ZOOM,	0x21)\
+	_(TEXT_MODE,	0x22)\
+	_(TEXT_MIX,		0x24)\
+	_(TEXT_TIME,	0x26)\
+	_(TEXT_RANGE,	0x27)\
+	_(RETURN_EXIT,	0x28)\
+	_(REVEAL,		0x2A)\
+	_(TEXT_UNK,		0x2B)\
+	_(AV_MODE,		0x30)	/*show/cycle picture modes: Cinema/Sport/Game/Off(=vivid/natural/expert)*/\
 	_(SUBTITLE,		0x39)\
 	_(UP,			0x40)\
 	_(DOWN,			0x41)\
-	_(LEFT,			0x07)\
-	_(RIGHT,		0x06)\
-	_(ENTER,		0x44)\
 	_(MENU,			0x43)\
-	_(GUIDE,		0xAB)\
-	_(SOUND,		0x52)\
+	_(OK,			0x44)	/*OK*/\
+	_(ENTER,		0x44)	/*OK*/\
+	_(DASH,			0x4C)\
 	_(PICTURE,		0x4D)	/*show/cycle picture mode*/\
-	_(RETURN_EXIT,	0x28)\
-	_(EXIT,			0x5B)\
-	_(SAP,			0x0A)\
-	_(ADJUST,		0xCB)	/*show position adjustment menu*/\
-	_(BRIGHT_DOWN,	0xE1)\
-	_(BRIGHT_UP,	0xE0)\
-	_(TV,			0xD6)\
-	_(POWER_ON,		0xC4)\
-	_(POWER_OFF,	0xC5)\
+	_(SOUND,		0x52)\
+	_(PROG_LIST,	0x53)\
 	_(AV1, 			0x5A)\
-	_(AV2,			0xD0)\
-	_(COMPONENT1,	0xBF)\
-	_(COMPONENT2,	0xD4)\
-	_(RGB,			0xD5)\
-	_(HDMI1,		0xCE)\
-	_(HDMI2,		0xCC)\
+	_(EXIT,			0x5B)\
+	_(PIP,			0x60)\
+	_(PIP_INPUT,	0x61)\
+	_(BLUE_KEY,		0x61)\
+	_(PIP_POSITION,	0x62)\
+	_(YELLOW_KEY,	0x63)\
+	_(FREEZE,		0x65)\
+	_(PIP_SIZE,		0x64)\
+	_(HOLD,			0x65)\
+	_(INDEX,		0x70)\
+	_(PIP_CHAN_DOWN,0x71)\
+	_(GREEN_KEY,	0x71)\
+	_(PIP_CHAN_UP,	0X72)\
+	_(RED_KEY,		0x72)\
 	_(RATIO_4_3,	0x76)\
 	_(RATIO_16_9,	0x77)\
+	_(RATIO,		0x79)	/*show/cycle aspect ratio mode*/\
+	_(SIMPLINK,		0x7E)\
+	_(ENERGY,		0x95)	/*show/cycle energy saving mode*/\
+	_(HDMI3,		0x98)\
+	_(INFO,			0xAA)\
+	_(GUIDE,		0xAB)\
 	_(RATIO_ZOOM,	0xAF)\
+	_(COMPONENT1,	0xBF)\
+	_(POWER_ON,		0xC4)\
+	_(POWER_OFF,	0xC5)\
+	_(HDMI,			0xC6)	/*cycles through HDMI inputs*/\
+	_(ADJUST,		0xCB)	/*show position adjustment menu*/\
+	_(HDMI1,		0xCE)\
+	_(HDMI2,		0xCC)\
+	_(AV2,			0xD0)\
+	_(AV3,			0xD1)\
+	_(AV4,			0xD2)\
+	_(SVIDEO2,		0xD3)\
+	_(COMPONENT2,	0xD4)\
+	_(RGB,			0xD5)\
+	_(TV,			0xD6)\
+	_(RGB2,			0xD7)\
+	_(BRIGHT_UP,	0xE0)\
+	_(BRIGHT_DOWN,	0xE1)\
+	_(TV_RADIO,		0xF0)\
 
 #define LISTS_TYPE(_)			NIT(_,LISTNAME)
 #define LISTS_LIST(_)\
@@ -324,6 +348,9 @@ DEF_LIST(CMD)
 #define TIMEOUT		1.0
 
 int fd = -1;		// filedescriptor for serial port
+char *device;
+int baudrate = 115200;
+int set_id = 0;		// 0 = all devices
 
 struct termios tios_stdin;
 
@@ -364,7 +391,6 @@ void InitSerial()
 {
 	if (fd != -1) return;	// already opened
 	
-	char *device = getenv("LG_DEVICE");
 	if (device == NULL) { fprintf(stderr, "You must set LG_DEVICE to the serial port connection device.\n"); exit(1); }
     fd = open(device, O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if (fd < 0) { fprintf(stderr, "Cannot open '%s'\n", device); exit(1); }
@@ -372,14 +398,13 @@ void InitSerial()
 
 	struct termios tios;
     memset(&tios, 0, sizeof(tios));
-    tios.c_ispeed = tios.c_ospeed = B9600;
-    cfsetispeed(&tios, B9600);
-    cfsetospeed(&tios, B9600);
+    cfsetispeed(&tios, baudrate);
+    cfsetospeed(&tios, baudrate);
     tios.c_cflag = CS8 | CLOCAL | CREAD;
-    tios.c_iflag = IGNPAR | IGNBRK | IXANY;// | INPCK;
+    tios.c_iflag = IGNPAR | IGNBRK | IXANY;
     tios.c_lflag = ISIG;
-    tios.c_cc[VMIN] = 1;        // non blocking
-    tios.c_cc[VTIME] = 0;       // no timer
+    tios.c_cc[VMIN] = 0;
+    tios.c_cc[VTIME] = 0;
     tcsetattr(fd, TCSANOW, &tios);
 
 	tcflush(fd, TCIOFLUSH);
@@ -405,9 +430,6 @@ int SendCommand(char cmd1, char cmd2, unsigned char value)
 {
 	InitSerial();
 	
-	char *set_id_str = getenv("LG_ID");
-	if (set_id_str == NULL) { fprintf(stderr, "You must set LG_ID to the TV id. Normally it is 1.\n"); exit(1); }
-	const int set_id = strtoul(set_id_str,0,0);
 	char cmd[20];
 	int len = sprintf(cmd, "%c%c %02x %02x\r", cmd1, cmd2, set_id, (int)value);
 	//printf("%s\n", cmd);
@@ -430,7 +452,12 @@ int SendCommand(char cmd1, char cmd2, unsigned char value)
 		}
 
 		// try reading a character
-        if (read(fd, p, 1) >= 1) if (p - cmd < sizeof(cmd))
+		int n = read(fd, p, 1);
+		if (n < 0)
+			usleep(1000);	//{ fprintf(stderr, "Could not read from device.\n"); exit(1); }
+        else if (n == 0)
+			usleep(1000);
+		else if (p - cmd < sizeof(cmd))
         {
 			if (*p == 'x')		// there's no real newline in response. hopefully cmd2 is never a 'x'
 			{
@@ -439,9 +466,9 @@ int SendCommand(char cmd1, char cmd2, unsigned char value)
 				char ok_ng[2];
 				int data;
 				char x;
-				if (sscanf(cmd, " %c %02x %2c%02x%c", &cmd2r, &id, ok_ng, &data, &x) == 5)
+				if (sscanf(cmd, "%c %02x %2c%02x%c", &cmd2r, &id, ok_ng, &data, &x) == 5)
 				{
-					if ((x == 'x') && (id == set_id) && (cmd2r == cmd2))
+					if ((x == 'x') && (cmd2r == cmd2))
 					{
 						if (ok_ng[0] == 'O' && ok_ng[1] == 'K')
 						{
@@ -463,8 +490,6 @@ int SendCommand(char cmd1, char cmd2, unsigned char value)
 			}
 			p++;
 		}
-
-		usleep(1000);
 	}
 }
 
@@ -489,6 +514,12 @@ void strfix(char *str)
 int main(int argc, char *argv[])
 {
 	InitStdio();
+
+	device = getenv("LG_DEVICE");
+	char *baudrate_str = getenv("LG_BAUDRATE");
+	if (baudrate_str != NULL) baudrate = strtoul(baudrate_str,0,0);
+	char *set_id_str = getenv("LG_ID");
+	if (set_id_str != NULL) set_id = strtoul(set_id_str,0,0);
 	
 	char *argv_cmd = (argc >= 2) ? argv[1] : NULL;
 	char *argv_value = (argc >= 3) ? argv[2] : NULL;
@@ -501,7 +532,11 @@ int main(int argc, char *argv[])
 	 */
 	if ((argv_cmd == NULL) && (argv_value == NULL))
 	{
-		printf("Usage: lg-tv-command [command] [value]\n\n");
+		printf("lg-tv-command (" __DATE__ ")\n");
+		printf("Usage: lg-tv-command [command] [value]\n");
+		printf("Settings: LG_DEVICE=%s, ", device);
+		printf("LG_BAUDRATE=%d, ", baudrate);
+		printf("LG_ID=%d\nCommands:\n", set_id);
 		LIST_STYPE(CMD) *commands = LIST(CMD);
 		for (int l=0; l<LENGTH(CMD); l++)
 		{
@@ -584,17 +619,17 @@ int main(int argc, char *argv[])
 	 */
 	if (list != NULL)
 	{
+		int best_length = INT_MAX;	// best length is smallest
 		char *argv_value2 = strdup(argv_value);
 		strfix(argv_value2);
 		for (int s=0; s<command->listlen; s++)
 		{
 			char *c = strdup(list[s].name);
 			strfix(c);
-			if (strstr(c, argv_value2) != NULL)
+			if ((strstr(c, argv_value2) != NULL) && (strlen(c) < best_length))
 			{
-				//printf("%s\n", list[s].name);
 				value = list[s].value;
-				break;
+				best_length = strlen(c);
 			}
 			free(c);
 		}
