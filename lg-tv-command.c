@@ -312,6 +312,10 @@ DEF_LIST(LISTS)
 
 #define CMD_TYPE(_)			NIT(_,NAME_CMD_LIST)
 #define CMD_LIST(_)\
+	_(ToolOption1,		'a','b',0,0,)\
+	_(ToolOption2,		'a','c',0,0,)\
+	_(ToolOption3,		'a','f',0,0,)\
+	_(ToolOption4,		'a','g',0,0,)\
 	_(Power,			'k','a',0,1,)\
 	/*_(InputSelect1,		'k','b',0,0,INPUT_SELECT1)*/\
 	_(AspectRatio,		'k','c',0,0,ASPECT_RATIO)\
@@ -415,7 +419,7 @@ void InitSerial()
 /*
  * Send command to LG TV
  *
- * value can be READ_STATUS
+ * value can be READ_STATUS to read current value
  *
  * return:
  * -256 = timeout/unknown response
@@ -426,12 +430,16 @@ void InitSerial()
  *   -3 wait more time
  *   hmm.. really?
  */
-int SendCommand(char cmd1, char cmd2, unsigned char value)
+int SendCommand(char cmd1, char cmd2, int value)
 {
 	InitSerial();
 	
 	char cmd[20];
-	int len = sprintf(cmd, "%c%c %02x %02x\r", cmd1, cmd2, set_id, (int)value);
+	int len;
+	if (value >= 0x100)
+		len = sprintf(cmd, "%c%c %02x %02x %02x\r", cmd1, cmd2, set_id, value>>8, value&255);
+	else
+		len = sprintf(cmd, "%c%c %02x %02x\r", cmd1, cmd2, set_id, value);
 	//printf("%s\n", cmd);
 	write(fd, cmd, len);
 	tcdrain(fd);
@@ -459,16 +467,19 @@ int SendCommand(char cmd1, char cmd2, unsigned char value)
 			usleep(1000);
 		else if (p - cmd < sizeof(cmd))
         {
+			// fix for missing first response character...
+			if (p == cmd && cmd[0] == ' ') { cmd[1] = cmd[0]; cmd[0] = cmd2; p++; }
+
 			if (*p == 'x')		// there's no real newline in response. hopefully cmd2 is never a 'x'
 			{
+				//int nbytes = (p - cmd - 7) / 2;
 				char cmd2r;
 				int id;
 				char ok_ng[2];
 				int data;
-				char x;
-				if (sscanf(cmd, "%c %02x %2c%02x%c", &cmd2r, &id, ok_ng, &data, &x) == 5)
+				if (sscanf(cmd, "%c %02x %2c%x", &cmd2r, &id, ok_ng, &data) >= 4)
 				{
-					if ((x == 'x') && (cmd2r == cmd2))
+					if (cmd2r == cmd2)
 					{
 						if (ok_ng[0] == 'O' && ok_ng[1] == 'K')
 						{
@@ -484,7 +495,7 @@ int SendCommand(char cmd1, char cmd2, unsigned char value)
 							return -data;
 						}
 					}
-					fprintf(stderr, "Unknown response: %s\n", cmd);					
+					fprintf(stderr, "Unknown response: %s\n", cmd);
 					return -256;
 				}
 			}
@@ -558,7 +569,9 @@ int main(int argc, char *argv[])
 		{
 			char *name2 = strdup(commands[l].name);
 			strfix(name2);
-			if (strstr(name2, argv_cmd2) != NULL)
+			// match substring when it's not a dangerous command
+			if ((commands[l].cmd1 != 'a') && (strstr(name2, argv_cmd2) != NULL) ||
+				(strcmp(name2, argv_cmd2) == 0))
 			{
 				cmd1 = commands[l].cmd1;
 				cmd2 = commands[l].cmd2;
