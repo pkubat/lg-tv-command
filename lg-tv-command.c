@@ -353,7 +353,7 @@ DEF_LIST(CMD)
 
 int fd = -1;		// filedescriptor for serial port
 char *device;
-int baudrate = 115200;
+int baudrate = 9600;
 int set_id = 0;		// 0 = all devices
 
 struct termios tios_stdin;
@@ -549,6 +549,22 @@ int Terminal()
 }
 
 /*
+ *
+ */
+int Sequence(char *s)
+{
+	InitSerial();
+	for (; *s; s++)
+	{
+		if (*s == '.')
+			usleep(100*1000);
+		else
+			write(fd, s, 1);
+	}
+	return 0;
+}
+
+/*
  * main
  */
 int main(int argc, char *argv[])
@@ -567,7 +583,11 @@ int main(int argc, char *argv[])
 	char cmd1 = -1, cmd2 = -1;
 	int value = -1;
 
+	// Special features
 	if ((argv_cmd != NULL) && (strcmp(argv_cmd, "-t") == 0)) return Terminal();
+	if ((argv_cmd != NULL) && (strcmp(argv_cmd, "-sl") == 0)) return Sequence("\033.x.\r.debug.\r.u.l..........0.4.1.3.....\033.x.");	// EZ ADJUST
+	if ((argv_cmd != NULL) && (strcmp(argv_cmd, "-sk") == 0)) return Sequence("\033.x.\r.debug.\r.u.k..........0.4.1.3.....\033.x.");	// IN-START
+	if ((argv_cmd != NULL) && (strcmp(argv_cmd, "-ss") == 0)) return Sequence("\033.x.\r.debug.\r.u.s..........0.4.1.3.....\033.x.");	// IN-STOP
 
 	/*
 	 * Show usage
@@ -577,6 +597,9 @@ int main(int argc, char *argv[])
 		printf("lg-tv-command (" __DATE__ ")\n");
 		printf("Usage:     lg-tv-command [command] [value]     To get/set value.\n");
 		printf("           lg-tv-command -t                    Enter terminal.\n");
+		printf("           lg-tv-command -sl                   Open EZ-ADJUST menu.\n");
+		printf("           lg-tv-command -sk                   Open IN-START menu.\n");
+		printf("           lg-tv-command -ss                   Factory defaults (IN-STOP).\n");
 		printf("Settings:  LG_DEVICE=%s, ", device);
 		printf("LG_BAUDRATE=%d, ", baudrate);
 		printf("LG_ID=%d\nCommands:\n", set_id);
