@@ -381,8 +381,8 @@ void InitStdio()
     struct termios ts;
     tcgetattr(fileno(stdin), &ts);
     ts.c_lflag &=~ (ICANON | ECHO /*| ISIG*/);
-    ts.c_cc[VMIN] = 1;      // non blocking
-    ts.c_cc[VTIME] = 1;     // no timer
+    ts.c_cc[VMIN] = 0;
+    ts.c_cc[VTIME] = 0;
     tcsetattr(fileno(stdin), TCSANOW, &ts);
 
     setbuf(stdout, 0);
@@ -520,6 +520,35 @@ void strfix(char *str)
 }
 
 /*
+ * Simple terminal
+ */
+int Terminal()
+{
+	InitSerial();
+	while (true)
+	{ 
+		char p[100];
+
+		int n = read(fd, p, sizeof(p));
+        if (n > 0)
+        {
+			write(STDOUT_FILENO, p, n);
+			continue;
+		}
+
+		n = read(STDIN_FILENO, p, sizeof(p));
+		if (n > 0)
+		{
+			write(fd, p, n);
+			continue;
+		}
+
+		usleep(1000);
+	}
+	return 0;
+}
+
+/*
  * main
  */
 int main(int argc, char *argv[])
@@ -538,14 +567,17 @@ int main(int argc, char *argv[])
 	char cmd1 = -1, cmd2 = -1;
 	int value = -1;
 
+	if ((argv_cmd != NULL) && (strcmp(argv_cmd, "-t") == 0)) return Terminal();
+
 	/*
 	 * Show usage
 	 */
 	if ((argv_cmd == NULL) && (argv_value == NULL))
 	{
 		printf("lg-tv-command (" __DATE__ ")\n");
-		printf("Usage: lg-tv-command [command] [value]\n");
-		printf("Settings: LG_DEVICE=%s, ", device);
+		printf("Usage:     lg-tv-command [command] [value]     To get/set value.\n");
+		printf("           lg-tv-command -t                    Enter terminal.\n");
+		printf("Settings:  LG_DEVICE=%s, ", device);
 		printf("LG_BAUDRATE=%d, ", baudrate);
 		printf("LG_ID=%d\nCommands:\n", set_id);
 		LIST_STYPE(CMD) *commands = LIST(CMD);
@@ -570,7 +602,7 @@ int main(int argc, char *argv[])
 			char *name2 = strdup(commands[l].name);
 			strfix(name2);
 			// match substring when it's not a dangerous command
-			if ((commands[l].cmd1 != 'a') && (strstr(name2, argv_cmd2) != NULL) ||
+			if (((commands[l].cmd1 != 'a') && (strstr(name2, argv_cmd2) != NULL)) ||
 				(strcmp(name2, argv_cmd2) == 0))
 			{
 				cmd1 = commands[l].cmd1;
